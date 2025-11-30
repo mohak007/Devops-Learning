@@ -27,7 +27,7 @@ echo "2. Deploying service using Docker Compose..."
 # 'docker compose' handles building, replacing, and starting the container in detached mode (-d).
 # '--force-recreate' ensures the service is updated.
 # '--build' forces a rebuild using the prepared context.
-sudo docker compose up --force-recreate --build -d
+sudo docker compose up --build -d
 
 # Check if the compose command was successful
 if [ $? -ne 0 ]; then
