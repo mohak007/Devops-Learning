@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VM Utility Dashboard</title>
+    <!-- Load Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configure Tailwind for a nice dark theme and Inter font -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'vm-bg': '#1e293b', // Slate 800 dark background
+                        'vm-card': '#334155', // Slate 700 card background
+                        'vm-text': '#f1f5f9', // Slate 100 text
+                        'vm-accent': '#60a5fa', // Blue 400 accent
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar styling for the console area */
+        #console-log::-webkit-scrollbar {
+            width: 8px;
+        }
+        #console-log::-webkit-scrollbar-thumb {
+            background-color: #475569; /* Slate 600 */
+            border-radius: 4px;
+        }
+        #console-log {
+            scrollbar-color: #475569 #334155; /* Firefox support: thumb track */
+            scrollbar-width: thin;
+        }
+    </style>
+</head>
+<body class="bg-vm-bg min-h-screen p-4 sm:p-8 font-sans text-vm-text">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="mb-8">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-vm-accent mb-2">
+                Ubuntu VM Status Panel
+            </h1>
+            <p class="text-vm-text/70 text-lg">
+                Real-time (Simulated) System Metrics and Log Output
+            </p>
+        </header>
+
+        <!-- Metrics Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+
+            <!-- CPU Usage Card -->
+            <div class="bg-vm-card p-6 rounded-xl shadow-lg border border-vm-card/50">
+                <h2 class="text-xl font-semibold mb-3">CPU Usage</h2>
+                <div class="flex items-center">
+                    <span id="cpu-value" class="text-4xl font-mono text-green-400 mr-3">0%</span>
+                    <div class="w-full bg-vm-bg rounded-full h-2.5">
+                        <div id="cpu-bar" class="bg-green-500 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Memory Usage Card -->
+            <div class="bg-vm-card p-6 rounded-xl shadow-lg border border-vm-card/50">
+                <h2 class="text-xl font-semibold mb-3">Memory (RAM)</h2>
+                <div class="flex items-center">
+                    <span id="mem-value" class="text-4xl font-mono text-yellow-400 mr-3">0MB</span>
+                    <span id="mem-limit" class="text-xl text-vm-text/50">/ 8192MB</span>
+                </div>
+                <p id="mem-percent" class="text-sm text-vm-text/70 mt-2">0% Used</p>
+            </div>
+
+            <!-- Disk I/O Card -->
+            <div class="bg-vm-card p-6 rounded-xl shadow-lg border border-vm-card/50">
+                <h2 class="text-xl font-semibold mb-3">Disk I/O</h2>
+                <p class="text-3xl font-mono text-vm-accent" id="disk-read">R: 0 KB/s</p>
+                <p class="text-3xl font-mono text-vm-accent mt-1" id="disk-write">W: 0 KB/s</p>
+            </div>
+
+            <!-- Network Latency Card -->
+            <div class="bg-vm-card p-6 rounded-xl shadow-lg border border-vm-card/50">
+                <h2 class="text-xl font-semibold mb-3">Network Ping</h2>
+                <p class="text-4xl font-mono text-purple-400" id="latency-value">0 ms</p>
+                <p class="text-sm text-vm-text/70 mt-2">Status: <span id="network-status" class="text-green-400">Stable</span></p>
+            </div>
+
+        </div>
+
+        <!-- Console Log Area -->
+        <div class="bg-vm-card p-6 rounded-xl shadow-lg border border-vm-card/50">
+            <h2 class="text-xl font-semibold mb-3 border-b border-vm-bg pb-2">Console Log</h2>
+            <div id="console-log" class="bg-vm-bg h-80 overflow-y-scroll p-4 rounded-lg text-sm font-mono text-vm-text leading-relaxed">
+                <!-- Log entries will be inserted here -->
+            </div>
+            <button id="clear-log-btn" class="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition duration-200 shadow-md">
+                Clear Log
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const cpuValue = document.getElementById('cpu-value');
+            const cpuBar = document.getElementById('cpu-bar');
+            const memValue = document.getElementById('mem-value');
+            const memLimit = document.getElementById('mem-limit');
+            const memPercent = document.getElementById('mem-percent');
+            const diskRead = document.getElementById('disk-read');
+            const diskWrite = document.getElementById('disk-write');
+            const latencyValue = document.getElementById('latency-value');
+            const networkStatus = document.getElementById('network-status');
+            const consoleLog = document.getElementById('console-log');
+            const clearLogBtn = document.getElementById('clear-log-btn');
+            memLimit.textContent = `/ ${TOTAL_RAM_MB}MB`;
+            const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+                { type: 'INFO', text: 'System check initiated.', color: 'text-vm-text' },
+                { type: 'DEBUG', text: 'Processing routine cron job.', color: 'text-blue-400' },
+            ];
+
+            function updateMetrics() {
+                const cpuPct = rand(5, 75);
+                cpuValue.textContent = `${cpuPct}%`;
+                cpuBar.style.width = `${cpuPct}%`;
+
+                const memPct = rand(20, 95);
+                const memUsed = Math.floor(TOTAL_RAM_MB * (memPct / 100));
+                memValue.textContent = `${memUsed}MB`;
+                memPercent.textContent = `${memPct}% Used`;
+
+                // 3. Disk I/O
+                diskRead.textContent = `R: ${rand(100, 1500)} KB/s`;
+
+                // 4. Latency
+                const latency = rand(1, 150);
+                latencyValue.textContent = `${latency} ms`;
+                if (latency > 100) {
+                    networkStatus.textContent = 'High';
+                    networkStatus.className = 'text-red-400';
+                } else if (latency > 50) {
+                    networkStatus.textContent = 'Moderate';
+                    networkStatus.className = 'text-yellow-400';
+                } else {
+                    networkStatus.textContent = 'Stable';
+                    networkStatus.className = 'text-green-400';
+                }
+            }
+
+            function addLogEntry() {
+                const log = LOG_MESSAGES[rand(0, LOG_MESSAGES.length - 1)];
+                const timestamp = new Date().toLocaleTimeString('en-US', {
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                });
+                
+                // Create the log entry element
+                const entry = document.createElement('div');
+                entry.innerHTML = `
+                    <span class="text-gray-500">[${timestamp}]</span> 
+                    <span class="${log.color} font-bold mr-2">${log.type}</span>
+                    <span class="${log.color}">${log.text}</span>
+                `;
+
+                // Add to console and scroll to bottom
+                consoleLog.appendChild(entry);
+                consoleLog.scrollTop = consoleLog.scrollHeight;
+                
+                // Limit the number of log entries to prevent excessive DOM growth
+                if (consoleLog.children.length > 50) {
+                    consoleLog.removeChild(consoleLog.children[0]);
+                }
+            }
+
+            function clearLog() {
+                consoleLog.innerHTML = `<div class="text-gray-500">Log cleared at ${new Date().toLocaleTimeString()}.</div>`;
+            }
+
+            // Initial setup and event listeners
+            clearLogBtn.addEventListener('click', clearLog);
+
+            // Initial calls
+            updateMetrics();
+            addLogEntry();
+
+            // Set up update intervals
+            setInterval(updateMetrics, 1500); // Update metrics every 1.5 seconds
+            setInterval(addLogEntry, 500);    // Add a new log entry every 0.5 seconds
+        });
+    </script>
+</body>
+</html>                diskWrite.textContent = `W: ${rand(50, 1000)} KB/s`;
+                // 2. Memory
+                cpuBar.className = `h-2.5 rounded-full ${cpuPct > 70 ? 'bg-red-500' : cpuPct > 40 ? 'bg-yellow-500' : 'bg-green-500'}`;
+                // 1. CPU
+                { type: 'ERROR', text: 'Failed to reach external mirror. Retrying.', color: 'text-red-400' },
+                { type: 'WARN', text: 'Disk utilization approaching 70%.', color: 'text-yellow-400' },
+                { type: 'SUCCESS', text: 'Service `sshd` is running.', color: 'text-green-400' },
+            const LOG_MESSAGES = [
+            // Log colors and messages
+
+            const randFloat = (min, max) => (Math.random() * (max - min) + min).toFixed(2);
+            // Function to generate a random number within a range
+
+
+            const TOTAL_RAM_MB = 8192;
+
