@@ -1,8 +1,9 @@
 #!/bin/bash
 # =======================================================
 # Docker Compose Deployment Script
-# 1. Prepares the build context by copying the HTML file.
-# 2. Executes 'docker compose up' to build, recreate, and start the service.
+# This script handles the pre-build file preparation and 
+# executes the Docker Compose build and run steps explicitly 
+# to avoid conflicts with Docker CLI versions on the agent.
 # =======================================================
 
 # Configuration Variables
@@ -22,16 +23,28 @@ fi
 echo "1. Stopping host Nginx service to free port 80 (If applicable)..."
 sudo systemctl stop nginx || true
 
-echo "2. Deploying service using Docker Compose..."
+echo "2. Deploying service using Docker Compose (Two-Step Process)..."
 
-# 'docker compose' handles building, replacing, and starting the container in detached mode (-d).
-# '--force-recreate' ensures the service is updated.
-# '--build' forces a rebuild using the prepared context.
-sudo docker compose up --build -d
+# STEP 2a: Explicitly build the image first.
+# This step creates the 'dashboard:main' image using the Dockerfile and index.html copy.
+echo "   -> Building Docker image..."
+sudo docker compose build
+
+if [ $? -ne 0 ]; then
+    echo "ERROR: Docker Compose BUILD failed."
+    # Clean up the temporary copy before exiting on failure
+    rm "${EXPECTED_FILE_DESTINATION}" || true
+    exit 1
+fi
+
+# STEP 2b: Run/recreate the container using the newly built image.
+# 'up -d' starts the service, recreating the container using the latest built image.
+echo "   -> Starting/Recreating container..."
+sudo docker compose up -d
 
 # Check if the compose command was successful
 if [ $? -ne 0 ]; then
-    echo "ERROR: Docker Compose deployment failed."
+    echo "ERROR: Docker Compose UP failed."
     # Clean up the temporary copy before exiting on failure
     rm "${EXPECTED_FILE_DESTINATION}" || true
     exit 1
