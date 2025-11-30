@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  # Defines the web service using the 'vm-dashboard' name
+  vm_dashboard_service:
+    # Use the local Dockerfile in the current directory ('.') to build the image
+    build: .
+    # The image name and tag that will be built locally
+    image: dashboard:main
+    # The name of the resulting container (used for verification in Jenkins)
+    container_name: vm-dashboard-container
+    # Map host port 80 to container port 80 (standard HTTP)
+    ports:
+      - "80:80"
+    # Ensure the container restarts automatically if it crashes
+    restart: always
+
+# Define the network for this service (optional but good practice)
+networks:
+  default:
+    name: vm_dashboard_net
