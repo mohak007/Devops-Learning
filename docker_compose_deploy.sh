@@ -6,7 +6,7 @@
 # =======================================================
 
 # Configuration Variables
-NEW_FILE_SOURCE="jenkins build vm status panel.html"
+NEW_FILE_SOURCE="jenkins_build_vm_status_panel.html"
 EXPECTED_FILE_DESTINATION="index.html" 
 
 echo "0. Setting up Docker build context: Copying ${NEW_FILE_SOURCE} to ${EXPECTED_FILE_DESTINATION}."
